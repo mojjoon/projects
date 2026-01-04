@@ -11,33 +11,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RunRecord">
 
-    <link rel="apple-touch-icon" href="https://dummyimage.com/180x180/000000/ffffff.png&text=R">
-
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;800&family=Markazi+Text:wght@700&family=Fugaz+One&family=Shadows+Into+Light+Two&family=Michroma&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     
     <style>
         :root { --bg-color: #101012; --card-bg: #1c1c1e; --toss-blue: #3182f6; --text-main: #ffffff; --text-sub: #adb5bd; }
         body { background: var(--bg-color); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        
         #canvas-container { position: relative; width: 340px; height: 604px; background: var(--card-bg); border-radius: 30px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #2c2c2e; margin-top: 20px; }
         canvas { width: 100%; height: 100%; display: block; }
-
         .controls { margin-top: 25px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
         .input-group { background: var(--card-bg); padding: 12px 15px; border-radius: 16px; display: flex; flex-direction: column; }
         .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
-        
         #fontSelect { background: transparent; border: none; color: white; font-size: 16px; outline: none; padding: 5px 0; cursor: pointer; width: 100%; }
-        #fontSelect option { background: #2c2c2e; color: white; padding: 10px; font-size: 18px; }
-
         .input-group input { background: transparent; border: none; color: white; font-size: 15px; outline: none; padding: 0; }
         .btn-row { display: flex; gap: 10px; margin-top: 5px; }
         button { flex: 1; border: none; padding: 16px; border-radius: 18px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
         #previewBtn { background: #3a3a3c; }
         #recordBtn { background: var(--toss-blue); }
-        button:active { transform: scale(0.96); opacity: 0.8; }
-        button:disabled { background: #2c2c2e; color: #555; cursor: not-allowed; }
-        
         #status { font-size: 12px; color: var(--toss-blue); text-align: center; margin-top: 8px; font-weight: 500; height: 15px; }
     </style>
 </head>
@@ -53,13 +43,13 @@
         <div class="input-group">
             <label>Choose Font Style</label>
             <select id="fontSelect" onchange="draw(displayData.distance)">
-                <option value="-apple-system" style="font-family: -apple-system;">Default San Francisco</option>
-                <option value="'Roboto Flex'" style="font-family: 'Roboto Flex';">Roboto Flex</option>
-                <option value="'Markazi Text'" style="font-family: 'Markazi Text';">Markazi Text</option>
-                <option value="'Fugaz One'" style="font-family: 'Fugaz One';">Fugaz One</option>
-                <option value="'Shadows Into Light Two'" style="font-family: 'Shadows Into Light Two';">Shadows Into Light Two</option>
-                <option value="'Michroma'" style="font-family: 'Michroma';">Michroma</option>
-                <option value="'Orbitron'" style="font-family: 'Orbitron';">Orbitron</option>
+                <option value="-apple-system">Default San Francisco</option>
+                <option value="'Roboto Flex'">Roboto Flex</option>
+                <option value="'Markazi Text'">Markazi Text</option>
+                <option value="'Fugaz One'">Fugaz One</option>
+                <option value="'Shadows Into Light Two'">Shadows Into Light Two</option>
+                <option value="'Michroma'">Michroma</option>
+                <option value="'Orbitron'">Orbitron</option>
             </select>
         </div>
 
@@ -123,7 +113,6 @@
             const marginX = 100;
             const startY = canvas.height - 620; 
 
-            // --- 1. Distance (175px Gap) ---
             ctx.textAlign = "left";
             ctx.fillStyle = "rgba(255,255,255,0.6)";
             ctx.font = `500 40px ${selectedFont}`; 
@@ -138,7 +127,6 @@
             ctx.font = `600 60px ${selectedFont}`; 
             ctx.fillText("km", marginX + dWidth + 20, startY);
 
-            // --- 2. Avg. Pace ---
             const pace = formatPace(document.getElementById('paceInput').value);
             ctx.fillStyle = "rgba(255,255,255,0.6)";
             ctx.font = `500 40px ${selectedFont}`; 
@@ -151,7 +139,6 @@
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.fillText("/km", marginX + pWidth + 15, startY + 185);
 
-            // --- 3. Time ---
             const time = formatTime(document.getElementById('timeInput').value);
             ctx.fillStyle = "rgba(255,255,255,0.6)";
             ctx.font = `500 40px ${selectedFont}`;
@@ -191,13 +178,21 @@
             if (isRecord) {
                 status.innerText = "🎬 Recording...";
                 const stream = canvas.captureStream(30);
-                recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                
+                // 🛠 [핵심 수정] 아이폰 전용 mp4 설정
+                let options = { mimeType: 'video/mp4' };
+                if (!MediaRecorder.isTypeSupported('video/mp4')) {
+                    options = { mimeType: 'video/webm' }; 
+                }
+
+                recorder = new MediaRecorder(stream, options);
                 recorder.ondataavailable = e => chunks.push(e.data);
                 recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const blob = new Blob(chunks, { type: options.mimeType });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url; a.download = 'run_record.webm';
+                    a.href = url; 
+                    a.download = `run_record_${new Date().getTime()}.mp4`; // 🛠 파일명도 .mp4로!
                     a.click();
                     status.innerText = "✅ Saved!";
                     pBtn.disabled = false; rBtn.disabled = false;
