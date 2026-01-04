@@ -45,8 +45,8 @@
             max-width: 340px; 
             display: flex; 
             flex-direction: column; 
-            gap: 12px; /* 간격을 살짝 넓혔습니다 */
-            padding: 0 20px 100px 20px; 
+            gap: 12px; 
+            padding: 0 20px 20px 20px; /* 아래 버전 표시를 위해 패딩 조절 */
             box-sizing: border-box;
         }
         
@@ -62,6 +62,15 @@
         #recordBtn { background: var(--toss-blue); padding: 18px; font-size: 16px; margin-top: 5px; }
         #status { font-size: 12px; color: var(--toss-blue); text-align: center; height: 15px; margin-top: 5px; }
         .drag-info { font-size: 11px; color: #666; text-align: center; margin-bottom: 10px; }
+        
+        /* 하단 버전 표시 스타일 */
+        .version-tag {
+            font-size: 10px;
+            color: #444;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -103,12 +112,12 @@
         </div>
 
         <div class="input-group">
-            <label>Avg. Pace (ex. 5:52 -> 552)</label>
+            <label>Avg. Pace (ex. 552)</label>
             <input type="text" id="paceInput" placeholder="555">
         </div>
 
         <div class="input-group">
-            <label>Time (ex. 01:00:00 -> 010000)</label>
+            <label>Time (ex. 010000)</label>
             <input type="text" id="timeInput" placeholder="000000">
         </div>
         
@@ -119,8 +128,9 @@
         </div>
     </div>
 
+    <div class="version-tag">v1.9</div>
+
 <script>
-    // [이전과 동일한 스크립트 로직 유지]
     const canvas = document.getElementById('runCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1080; canvas.height = 1920;
