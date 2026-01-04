@@ -4,62 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="apple-touch-icon" href="icon.png">
-    <title>RunRecord</title>
+    <title>RunRecord Pro</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;800&family=Markazi+Text:wght@700&family=Fugaz+One&family=Shadows+Into+Light+Two&family=Michroma&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        :root { --bg-color: #101012; --card-bg: #1c1c1e; --toss-blue: #3182f6; --text-main: #ffffff; --text-sub: #adb5bd; }
-        body { background: var(--bg-color); color: var(--text-main); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        #canvas-container { position: relative; width: 340px; height: 604px; background: var(--card-bg); border-radius: 30px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #2c2c2e; margin-top: 10px; }
+        :root { --bg-color: #101012; --card-bg: #1c1c1e; --toss-blue: #3182f6; --text-main: #ffffff; --text-sub: #adb5bd; --danger: #ff3b30; }
+        body { background: var(--bg-color); color: var(--text-main); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; touch-action: none; }
+        #canvas-container { position: relative; width: 340px; height: 604px; background: var(--card-bg); border-radius: 30px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #2c2c2e; margin-top: 10px; cursor: move; }
         canvas { width: 100%; height: 100%; display: block; }
         .controls { margin-top: 20px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 50px; }
         .input-group { background: var(--card-bg); padding: 10px 15px; border-radius: 16px; display: flex; flex-direction: column; }
-        .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 3px; font-weight: 600; }
+        .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
         select, input { background: transparent; border: none; color: white; font-size: 15px; outline: none; padding: 2px 0; }
         .btn-row { display: flex; gap: 8px; }
-        button { flex: 1; border: none; padding: 14px; border-radius: 16px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
-        .align-btn { background: #3a3a3c; padding: 10px; font-size: 12px; }
-        .align-btn.active { background: var(--toss-blue); }
-        #recordBtn { background: var(--toss-blue); }
+        button { flex: 1; border: none; padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
+        .opt-btn { background: #3a3a3c; }
+        .opt-btn.active { background: var(--toss-blue); }
+        .reset-btn { background: #2c2c2e; color: var(--danger); border: 1px solid #3a3a3c; font-size: 11px; }
+        #recordBtn { background: var(--toss-blue); padding: 16px; font-size: 15px; margin-top: 5px; }
         #status { font-size: 11px; color: var(--toss-blue); text-align: center; height: 12px; margin: 5px 0; }
+        .drag-info { font-size: 10px; color: #666; text-align: center; margin-bottom: 5px; }
     </style>
 </head>
 <body>
+    <div class="drag-info">💡 글자를 드래그해서 위치를 옮기거나 리셋 버튼을 눌러보세요!</div>
     <div id="canvas-container"><canvas id="runCanvas"></canvas></div>
+    
     <div class="controls">
         <input type="file" id="imageInput" accept="image/*" style="color: #888; font-size: 12px;">
+        
         <div class="input-group">
-            <label>Text Alignment</label>
+            <label>Alignment & Size</label>
+            <div class="btn-row" style="margin-bottom:8px;">
+                <button class="opt-btn align-btn active" onclick="setAlign('left', this)">Left</button>
+                <button class="opt-btn align-btn" onclick="setAlign('center', this)">Center</button>
+                <button class="opt-btn align-btn" onclick="setAlign('right', this)">Right</button>
+            </div>
             <div class="btn-row">
-                <button class="align-btn active" onclick="setAlign('left', this)">Left</button>
-                <button class="align-btn" onclick="setAlign('center', this)">Center</button>
-                <button class="align-btn" onclick="setAlign('right', this)">Right</button>
+                <button class="opt-btn size-btn" onclick="setSize(0.7, this)">Small</button>
+                <button class="opt-btn size-btn active" onclick="setSize(1.0, this)">Med</button>
+                <button class="opt-btn size-btn" onclick="setSize(1.3, this)">Large</button>
+                <button class="reset-btn" onclick="resetToDefault()">Reset</button>
             </div>
         </div>
+
         <div class="input-group">
             <label>Font Style</label>
             <select id="fontSelect" onchange="draw(displayData.distance)">
                 <option value="-apple-system">San Francisco</option>
-                <option value="'Orbitron'">Orbitron (Cyber)</option>
+                <option value="'Orbitron'">Orbitron</option>
                 <option value="'Roboto Flex'">Roboto Flex</option>
                 <option value="'Fugaz One'">Fugaz One</option>
-                <option value="'Michroma'">Michroma</option>
             </select>
         </div>
-        <div class="input-group">
-            <label>Distance (KM)</label>
-            <input type="number" id="distInput" placeholder="0.00" step="0.01">
-        </div>
+        
         <div class="btn-row">
-            <div class="input-group" style="flex:1;"><label>Avg. Pace</label><input type="text" id="paceInput" placeholder="555"></div>
-            <div class="input-group" style="flex:1;"><label>Time</label><input type="text" id="timeInput" placeholder="000000"></div>
+            <div class="input-group" style="flex:1.5;"><label>Distance (KM)</label><input type="number" id="distInput" placeholder="0.00" step="0.01"></div>
+            <div class="input-group" style="flex:1;"><label>Pace</label><input type="text" id="paceInput" placeholder="555"></div>
         </div>
+        <div class="input-group">
+            <label>Time</label>
+            <input type="text" id="timeInput" placeholder="000000">
+        </div>
+        
         <div id="status"></div>
         <div class="btn-row">
-            <button id="previewBtn" style="background:#3a3a3c" onclick="runAnimation(false)">Preview</button>
-            <button id="recordBtn" onclick="runAnimation(true)">Create & Save (.mp4)</button>
+            <button class="opt-btn" style="background:#444" onclick="runAnimation(false)">Preview</button>
+            <button id="recordBtn" style="flex:2;" onclick="runAnimation(true)">Save (.mp4)</button>
         </div>
     </div>
 
@@ -68,13 +81,57 @@
     const ctx = canvas.getContext('2d');
     canvas.width = 1080; canvas.height = 1920;
 
+    const DEFAULT_POS = { x: 100, y: 1300 };
+    const DEFAULT_SCALE = 1.0;
+    const DEFAULT_ALIGN = 'left';
+
     let bgImage = null;
     let displayData = { distance: 0 };
-    let textAlign = 'left'; // 기본 정렬값
+    let textAlign = DEFAULT_ALIGN; 
+    let textSizeScale = DEFAULT_SCALE;
+    let textPos = { ...DEFAULT_POS }; 
+    let isDragging = false;
+
+    function resetToDefault() {
+        textAlign = DEFAULT_ALIGN;
+        textSizeScale = DEFAULT_SCALE;
+        textPos = { ...DEFAULT_POS };
+        document.querySelectorAll('.align-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase() === DEFAULT_ALIGN));
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.toggle('active', b.innerText === 'Med'));
+        draw(displayData.distance);
+    }
+
+    const container = document.getElementById('canvas-container');
+    const handleStart = () => { isDragging = true; };
+    const handleEnd = () => { isDragging = false; };
+    const handleMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        textPos.x = (clientX - rect.left) * (canvas.width / rect.width);
+        textPos.y = (clientY - rect.top) * (canvas.height / rect.height);
+        draw(displayData.distance);
+    };
+
+    container.addEventListener('mousedown', handleStart);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('mousemove', handleMove);
+    container.addEventListener('touchstart', handleStart);
+    window.addEventListener('touchend', handleEnd);
+    container.addEventListener('touchmove', handleMove, { passive: false });
 
     function setAlign(align, btn) {
         textAlign = align;
         document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        draw(displayData.distance);
+    }
+
+    function setSize(scale, btn) {
+        textSizeScale = scale;
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         draw(displayData.distance);
     }
@@ -96,86 +153,72 @@
         const font = document.getElementById('fontSelect').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 1. 배경 및 그라데이션 설정
         if (bgImage) {
             const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
             const x = (canvas.width / 2) - (bgImage.width / 2) * scale;
             const y = (canvas.height / 2) - (bgImage.height / 2) * scale;
             ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
             
-            let grad;
-            if(textAlign === 'center') grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height * 0.4);
-            else if(textAlign === 'left') grad = ctx.createLinearGradient(0, canvas.height, canvas.width * 0.8, canvas.height * 0.4);
-            else grad = ctx.createLinearGradient(canvas.width, canvas.height, canvas.width * 0.2, canvas.height * 0.4);
-            
-            grad.addColorStop(0, "rgba(0,0,0,0.85)");
+            let grad = ctx.createLinearGradient(0, textPos.y + 500, 0, textPos.y - 300);
+            grad.addColorStop(0, "rgba(0,0,0,0.9)");
             grad.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
             ctx.fillStyle = "#1c1c1e"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // 2. 정렬 기준 X좌표 설정
-        let xPos;
-        const padding = 100;
-        if (textAlign === 'left') xPos = padding;
-        else if (textAlign === 'center') xPos = canvas.width / 2;
-        else xPos = canvas.width - padding;
+        const dSize = 180 * textSizeScale;
+        const unitSize = 60 * textSizeScale;
+        const labelSize = 40 * textSizeScale;
+        const subValueSize = 75 * textSizeScale;
+        const spacing = 25 * textSizeScale;
 
-        const startY = canvas.height - 620;
-
-        // 3. 거리(Distance) 섹션 처리
         const dText = dist.toFixed(2);
         const unitText = "km";
-        ctx.font = `bold 180px ${font}`;
+        
+        ctx.font = `bold ${dSize}px ${font}`;
         const dWidth = ctx.measureText(dText).width;
-        ctx.font = `600 60px ${font}`;
+        ctx.font = `600 ${unitSize}px ${font}`;
         const uWidth = ctx.measureText(unitText).width;
-        const spacing = 25;
         const totalDistWidth = dWidth + spacing + uWidth;
 
-        // [Distance 라벨 정렬]
-        ctx.textAlign = textAlign; 
+        let currentX = textPos.x;
+
+        ctx.textAlign = textAlign;
         ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.font = `500 40px ${font}`;
-        ctx.fillText("Distance", xPos, startY - 175);
+        ctx.font = `500 ${labelSize}px ${font}`;
+        ctx.fillText("Distance", currentX, textPos.y - (175 * textSizeScale));
 
-        // [숫자 + km 덩어리 정렬 시작점 계산]
-        let distStartX = xPos;
-        if (textAlign === 'center') distStartX = xPos - (totalDistWidth / 2);
-        else if (textAlign === 'right') distStartX = xPos - totalDistWidth;
+        let distStartX = currentX;
+        if (textAlign === 'center') distStartX = currentX - (totalDistWidth / 2);
+        else if (textAlign === 'right') distStartX = currentX - totalDistWidth;
 
-        // [숫자와 km 그리기]
-        ctx.textAlign = "left"; 
+        ctx.textAlign = "left";
         ctx.fillStyle = "white";
-        ctx.font = `bold 180px ${font}`;
-        ctx.fillText(dText, distStartX, startY);
-        ctx.font = `600 60px ${font}`;
-        ctx.fillText(unitText, distStartX + dWidth + spacing, startY);
+        ctx.font = `bold ${dSize}px ${font}`;
+        ctx.fillText(dText, distStartX, textPos.y);
+        ctx.font = `600 ${unitSize}px ${font}`;
+        ctx.fillText(unitText, distStartX + dWidth + spacing, textPos.y);
 
-        // 4. 페이스 & 시간 섹션 처리
         const pace = formatPace(document.getElementById('paceInput').value);
         const time = formatTime(document.getElementById('timeInput').value);
-        
-        ctx.textAlign = textAlign; // 각 항목별 제자리 정렬 적용
+        ctx.textAlign = textAlign;
 
-        // 평균 페이스
-        ctx.font = `500 40px ${font}`;
+        ctx.font = `500 ${labelSize}px ${font}`;
         ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.fillText("Avg. Pace", xPos, startY + 100);
+        ctx.fillText("Avg. Pace", currentX, textPos.y + (100 * textSizeScale));
         ctx.fillStyle = "white";
-        ctx.font = `bold 75px ${font}`;
-        ctx.fillText(pace, xPos, startY + 185);
+        ctx.font = `bold ${subValueSize}px ${font}`;
+        ctx.fillText(pace, currentX, textPos.y + (185 * textSizeScale));
 
-        // 시간
-        ctx.font = `500 40px ${font}`;
+        ctx.font = `500 ${labelSize}px ${font}`;
         ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.fillText("Time", xPos, startY + 285);
+        ctx.fillText("Time", currentX, textPos.y + (285 * textSizeScale));
         ctx.fillStyle = "white";
-        ctx.font = `bold 75px ${font}`;
-        ctx.fillText(time, xPos, startY + 370);
+        ctx.font = `bold ${subValueSize}px ${font}`;
+        ctx.fillText(time, currentX, textPos.y + (370 * textSizeScale));
     }
-    // [이전과 동일한 이벤트 리스너 및 애니메이션 함수들...]
+
     document.getElementById('paceInput').oninput = () => draw(displayData.distance);
     document.getElementById('timeInput').oninput = () => draw(displayData.distance);
     document.getElementById('distInput').oninput = (e) => { displayData.distance = parseFloat(e.target.value) || 0; draw(displayData.distance); };
@@ -188,11 +231,7 @@
     async function runAnimation(isRecord = false) {
         const target = parseFloat(document.getElementById('distInput').value) || 0;
         const status = document.getElementById('status');
-        const pBtn = document.getElementById('previewBtn');
-        const rBtn = document.getElementById('recordBtn');
         displayData.distance = 0;
-        pBtn.disabled = true; rBtn.disabled = true;
-
         let recorder = null; let chunks = [];
         if (isRecord) {
             status.innerText = "🎬 Recording...";
@@ -208,15 +247,13 @@
                 a.download = `run_${new Date().getTime()}.mp4`;
                 a.click();
                 status.innerText = "✅ Saved!";
-                pBtn.disabled = false; rBtn.disabled = false;
             };
             recorder.start();
         }
-
         gsap.to(displayData, {
             distance: target, duration: 5.5, ease: "power4.out",
             onUpdate: () => draw(displayData.distance),
-            onComplete: () => { setTimeout(() => { if (isRecord) recorder.stop(); else { status.innerText = ""; pBtn.disabled = false; rBtn.disabled = false; } }, 1000); }
+            onComplete: () => { setTimeout(() => { if (isRecord) recorder.stop(); else status.innerText = ""; }, 1000); }
         });
     }
     draw();
