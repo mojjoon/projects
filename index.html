@@ -11,29 +11,67 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root { --bg-color: #101012; --card-bg: #1c1c1e; --toss-blue: #3182f6; --text-main: #ffffff; --text-sub: #adb5bd; --danger: #ff3b30; }
-        body { background: var(--bg-color); color: var(--text-main); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; touch-action: none; }
-        #canvas-container { position: relative; width: 340px; height: 604px; background: var(--card-bg); border-radius: 30px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #2c2c2e; margin-top: 10px; cursor: move; }
+        
+        /* 전체 화면 스크롤 허용 */
+        body { 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: -apple-system, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px 0; 
+            margin: 0; 
+            min-height: 100vh;
+        }
+        
+        /* 캔버스 컨테이너: 여기서만 터치 기본 동작(스크롤)을 막음 */
+        #canvas-container { 
+            position: relative; 
+            width: 340px; 
+            height: 604px; 
+            background: var(--card-bg); 
+            border-radius: 30px; 
+            overflow: hidden; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            border: 1px solid #2c2c2e; 
+            cursor: move; 
+            touch-action: none; /* 중요: 브라우저 스크롤 방지 */
+            flex-shrink: 0;
+        }
         canvas { width: 100%; height: 100%; display: block; }
-        .controls { margin-top: 20px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 50px; }
-        .input-group { background: var(--card-bg); padding: 10px 15px; border-radius: 16px; display: flex; flex-direction: column; }
-        .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
-        select, input { background: transparent; border: none; color: white; font-size: 15px; outline: none; padding: 2px 0; }
+        
+        /* 컨트롤러 영역: 스크롤 방해 금지 */
+        .controls { 
+            margin-top: 20px; 
+            width: 100%; 
+            max-width: 340px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            padding: 0 20px 100px 20px; /* 하단 여유 공간 */
+            box-sizing: border-box;
+        }
+        
+        .input-group { background: var(--card-bg); padding: 12px 15px; border-radius: 18px; display: flex; flex-direction: column; }
+        .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+        select, input { background: transparent; border: none; color: white; font-size: 16px; outline: none; padding: 2px 0; }
         .btn-row { display: flex; gap: 8px; }
-        button { flex: 1; border: none; padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
+        button { flex: 1; border: none; padding: 14px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
         .opt-btn { background: #3a3a3c; }
         .opt-btn.active { background: var(--toss-blue); }
         .reset-btn { background: #2c2c2e; color: var(--danger); border: 1px solid #3a3a3c; font-size: 11px; }
-        #recordBtn { background: var(--toss-blue); padding: 16px; font-size: 15px; margin-top: 5px; }
-        #status { font-size: 11px; color: var(--toss-blue); text-align: center; height: 12px; margin: 5px 0; }
-        .drag-info { font-size: 10px; color: #666; text-align: center; margin-bottom: 5px; }
+        #recordBtn { background: var(--toss-blue); padding: 18px; font-size: 16px; margin-top: 10px; }
+        #status { font-size: 12px; color: var(--toss-blue); text-align: center; height: 15px; margin-top: 5px; }
+        .drag-info { font-size: 11px; color: #666; text-align: center; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="drag-info">💡 글자를 드래그해서 위치를 옮기거나 리셋 버튼을 눌러보세요!</div>
+    <div class="drag-info">💡 사진 속 글자를 드래그해서 위치를 옮겨보세요!</div>
     <div id="canvas-container"><canvas id="runCanvas"></canvas></div>
     
     <div class="controls">
-        <input type="file" id="imageInput" accept="image/*" style="color: #888; font-size: 12px;">
+        <input type="file" id="imageInput" accept="image/*" style="color: #888; font-size: 12px; margin-bottom: 5px;">
         
         <div class="input-group">
             <label>Alignment & Size</label>
@@ -101,26 +139,39 @@
         draw(displayData.distance);
     }
 
+    // --- 드래그 로직 (영역 구분) ---
     const container = document.getElementById('canvas-container');
-    const handleStart = () => { isDragging = true; };
+
+    const handleStart = (e) => {
+        isDragging = true;
+        // 드래그 시작 시점의 기본 동작만 막음 (캔버스 영역만)
+    };
+
     const handleEnd = () => { isDragging = false; };
+
     const handleMove = (e) => {
         if (!isDragging) return;
-        e.preventDefault();
+        
+        // 캔버스 위에서 움직일 때만 브라우저 스크롤 차단
+        if (e.cancelable) e.preventDefault();
+
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
         textPos.x = (clientX - rect.left) * (canvas.width / rect.width);
         textPos.y = (clientY - rect.top) * (canvas.height / rect.height);
+        
         draw(displayData.distance);
     };
 
     container.addEventListener('mousedown', handleStart);
     window.addEventListener('mouseup', handleEnd);
     window.addEventListener('mousemove', handleMove);
-    container.addEventListener('touchstart', handleStart);
+
+    container.addEventListener('touchstart', handleStart, { passive: true });
     window.addEventListener('touchend', handleEnd);
-    container.addEventListener('touchmove', handleMove, { passive: false });
+    container.addEventListener('touchmove', handleMove, { passive: false }); // 여기서 preventDefault를 써야하므로 false
 
     function setAlign(align, btn) {
         textAlign = align;
@@ -172,18 +223,15 @@
         const labelSize = 40 * textSizeScale;
         const subValueSize = 75 * textSizeScale;
         const spacing = 25 * textSizeScale;
-
         const dText = dist.toFixed(2);
-        const unitText = "km";
         
         ctx.font = `bold ${dSize}px ${font}`;
         const dWidth = ctx.measureText(dText).width;
         ctx.font = `600 ${unitSize}px ${font}`;
-        const uWidth = ctx.measureText(unitText).width;
+        const uWidth = ctx.measureText("km").width;
         const totalDistWidth = dWidth + spacing + uWidth;
 
         let currentX = textPos.x;
-
         ctx.textAlign = textAlign;
         ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.font = `500 ${labelSize}px ${font}`;
@@ -193,35 +241,28 @@
         if (textAlign === 'center') distStartX = currentX - (totalDistWidth / 2);
         else if (textAlign === 'right') distStartX = currentX - totalDistWidth;
 
-        ctx.textAlign = "left";
-        ctx.fillStyle = "white";
+        ctx.textAlign = "left"; ctx.fillStyle = "white";
         ctx.font = `bold ${dSize}px ${font}`;
         ctx.fillText(dText, distStartX, textPos.y);
         ctx.font = `600 ${unitSize}px ${font}`;
-        ctx.fillText(unitText, distStartX + dWidth + spacing, textPos.y);
+        ctx.fillText("km", distStartX + dWidth + spacing, textPos.y);
 
         const pace = formatPace(document.getElementById('paceInput').value);
         const time = formatTime(document.getElementById('timeInput').value);
         ctx.textAlign = textAlign;
-
-        ctx.font = `500 ${labelSize}px ${font}`;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.font = `500 ${labelSize}px ${font}`; ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.fillText("Avg. Pace", currentX, textPos.y + (100 * textSizeScale));
-        ctx.fillStyle = "white";
-        ctx.font = `bold ${subValueSize}px ${font}`;
+        ctx.fillStyle = "white"; ctx.font = `bold ${subValueSize}px ${font}`;
         ctx.fillText(pace, currentX, textPos.y + (185 * textSizeScale));
-
-        ctx.font = `500 ${labelSize}px ${font}`;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.font = `500 ${labelSize}px ${font}`; ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.fillText("Time", currentX, textPos.y + (285 * textSizeScale));
-        ctx.fillStyle = "white";
-        ctx.font = `bold ${subValueSize}px ${font}`;
+        ctx.fillStyle = "white"; ctx.font = `bold ${subValueSize}px ${font}`;
         ctx.fillText(time, currentX, textPos.y + (370 * textSizeScale));
     }
 
+    document.getElementById('distInput').oninput = (e) => { displayData.distance = parseFloat(e.target.value) || 0; draw(displayData.distance); };
     document.getElementById('paceInput').oninput = () => draw(displayData.distance);
     document.getElementById('timeInput').oninput = () => draw(displayData.distance);
-    document.getElementById('distInput').oninput = (e) => { displayData.distance = parseFloat(e.target.value) || 0; draw(displayData.distance); };
     document.getElementById('imageInput').onchange = (e) => {
         const reader = new FileReader();
         reader.onload = (ev) => { const img = new Image(); img.onload = () => { bgImage = img; draw(displayData.distance); }; img.src = ev.target.result; };
@@ -242,10 +283,8 @@
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: options.mimeType });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `run_${new Date().getTime()}.mp4`;
-                a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `run_${new Date().getTime()}.mp4`; a.click();
                 status.innerText = "✅ Saved!";
             };
             recorder.start();
@@ -253,7 +292,7 @@
         gsap.to(displayData, {
             distance: target, duration: 5.5, ease: "power4.out",
             onUpdate: () => draw(displayData.distance),
-            onComplete: () => { setTimeout(() => { if (isRecord) recorder.stop(); else status.innerText = ""; }, 1000); }
+            onComplete: () => { if (isRecord) recorder.stop(); }
         });
     }
     draw();
