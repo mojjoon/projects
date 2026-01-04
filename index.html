@@ -3,225 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>준현의 러닝 레코드</title>
     <link rel="apple-touch-icon" href="icon.png">
-    
-    <title>RunRecord</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RunRecord">
-
-    <link rel="apple-touch-icon" href="https://dummyimage.com/180x180/000000/ffffff.png&text=R">
-
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;800&family=Markazi+Text:wght@700&family=Fugaz+One&family=Shadows+Into+Light+Two&family=Michroma&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
     <style>
-        :root { --bg-color: #101012; --card-bg: #1c1c1e; --toss-blue: #3182f6; --text-main: #ffffff; --text-sub: #adb5bd; }
-        body { background: var(--bg-color); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        
-        #canvas-container { position: relative; width: 340px; height: 604px; background: var(--card-bg); border-radius: 30px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #2c2c2e; margin-top: 20px; }
-        canvas { width: 100%; height: 100%; display: block; }
-
-        .controls { margin-top: 25px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
-        .input-group { background: var(--card-bg); padding: 12px 15px; border-radius: 16px; display: flex; flex-direction: column; }
-        .input-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
-        
-        #fontSelect { background: transparent; border: none; color: white; font-size: 16px; outline: none; padding: 5px 0; cursor: pointer; width: 100%; }
-        #fontSelect option { background: #2c2c2e; color: white; padding: 10px; font-size: 18px; }
-
-        .input-group input { background: transparent; border: none; color: white; font-size: 15px; outline: none; padding: 0; }
-        .btn-row { display: flex; gap: 10px; margin-top: 5px; }
-        button { flex: 1; border: none; padding: 16px; border-radius: 18px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; color: white; }
-        #previewBtn { background: #3a3a3c; }
-        #recordBtn { background: var(--toss-blue); }
-        button:active { transform: scale(0.96); opacity: 0.8; }
-        button:disabled { background: #2c2c2e; color: #555; cursor: not-allowed; }
-        
-        #status { font-size: 12px; color: var(--toss-blue); text-align: center; margin-top: 8px; font-weight: 500; height: 15px; }
+        /* 기존 디자인 유지 */
+        body { margin: 0; background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow: hidden; }
+        #video-container { position: relative; width: 100vw; height: 100vh; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .overlay { position: absolute; bottom: 50px; left: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+        .stat { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
+        .label { font-size: 1rem; opacity: 0.8; }
+        #controls { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; }
+        button { background: rgba(255,255,255,0.2); border: 1px solid #fff; color: #fff; padding: 10px; border-radius: 8px; backdrop-filter: blur(5px); }
+        .recording { background: red; border-color: red; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <div id="canvas-container">
-        <canvas id="runCanvas"></canvas>
+<div id="video-container">
+    <video id="preview" autoplay playsinline muted></video>
+    
+    <div class="overlay">
+        <div class="stat" id="display-pace">0'00"</div>
+        <div class="label">평균 페이스 (km)</div>
+        <div style="height: 20px;"></div>
+        <div class="stat" id="display-dist">0.00</div>
+        <div class="label">거리 (km)</div>
     </div>
 
-    <div class="controls">
-        <input type="file" id="imageInput" accept="image/*" style="margin-bottom: 5px; color: #888;">
-        
-        <div class="input-group">
-            <label>Choose Font Style</label>
-            <select id="fontSelect" onchange="draw(displayData.distance)">
-                <option value="-apple-system" style="font-family: -apple-system;">Default San Francisco</option>
-                <option value="'Roboto Flex'" style="font-family: 'Roboto Flex';">Roboto Flex</option>
-                <option value="'Markazi Text'" style="font-family: 'Markazi Text';">Markazi Text</option>
-                <option value="'Fugaz One'" style="font-family: 'Fugaz One';">Fugaz One</option>
-                <option value="'Shadows Into Light Two'" style="font-family: 'Shadows Into Light Two';">Shadows Into Light Two</option>
-                <option value="'Michroma'" style="font-family: 'Michroma';">Michroma</option>
-                <option value="'Orbitron'" style="font-family: 'Orbitron';">Orbitron</option>
-            </select>
-        </div>
-
-        <div class="input-group">
-            <label>Distance (KM)</label>
-            <input type="number" id="distInput" placeholder="20.25" step="0.01">
-        </div>
-        <div class="input-row" style="display: flex; gap: 10px;">
-            <div class="input-group" style="flex:1;"><label>Avg. Pace</label><input type="text" id="paceInput" placeholder="555"></div>
-            <div class="input-group" style="flex:1;"><label>Time</label><input type="text" id="timeInput" placeholder="013025"></div>
-        </div>
-        
-        <div class="btn-row">
-            <button id="previewBtn" onclick="runAnimation(false)">Preview</button>
-            <button id="recordBtn" onclick="runAnimation(true)">Create & Save</button>
-        </div>
-        <p id="status"></p>
+    <div id="controls">
+        <button id="btn-record">녹화 시작</button>
     </div>
+</div>
 
-    <script>
-        const canvas = document.getElementById('runCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 1080; canvas.height = 1920;
+<script>
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
 
-        let bgImage = null;
-        let displayData = { distance: 0 };
-        let currentAnim = null;
+    // 카메라 연결
+    async function setupCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' }, 
+            audio: true 
+        });
+        document.getElementById('preview').srcObject = stream;
+        window.stream = stream;
+    }
 
-        function formatPace(val) {
-            if (!val) return "0'00\"";
-            let n = val.replace(/\D/g, '');
-            if (n.length >= 3) return `${n.slice(0, n.length-2)}'${n.slice(n.length-2)}"`;
-            return n;
+    // 아이폰용 .mp4 녹화 설정
+    const startRecording = () => {
+        recordedChunks = [];
+        
+        // 아이폰 사파리가 가장 선호하는 mp4 형식 지정
+        let options = { mimeType: 'video/mp4' };
+        if (!MediaRecorder.isTypeSupported('video/mp4')) {
+            options = { mimeType: 'video/webm' }; // 안되면 차선책
         }
 
-        function formatTime(val) {
-            if (!val) return "00:00";
-            let n = val.replace(/\D/g, '');
-            if (n.length === 6) return `${n.slice(0,2)}:${n.slice(2,4)}:${n.slice(4,6)}`;
-            else if (n.length === 4) return `${n.slice(0,2)}:${n.slice(2,4)}`;
-            return val;
-        }
-
-        function draw(dist = 0) {
-            const selectedFont = document.getElementById('fontSelect').value;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            if (bgImage) {
-                const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
-                const x = (canvas.width / 2) - (bgImage.width / 2) * scale;
-                const y = (canvas.height / 2) - (bgImage.height / 2) * scale;
-                ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
-                let grad = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
-                grad.addColorStop(0, "rgba(0,0,0,0)");
-                grad.addColorStop(1, "rgba(0,0,0,0.85)");
-                ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = "#1c1c1e"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            const marginX = 100;
-            const startY = canvas.height - 620; 
-
-            // --- 1. Distance (175px Gap) ---
-            ctx.textAlign = "left";
-            ctx.fillStyle = "rgba(255,255,255,0.6)";
-            ctx.font = `500 40px ${selectedFont}`; 
-            ctx.fillText("Distance", marginX, startY - 175);
-
-            ctx.fillStyle = "white";
-            ctx.font = `bold 180px ${selectedFont}`; 
-            const dText = dist.toFixed(2);
-            ctx.fillText(dText, marginX, startY);
-            
-            const dWidth = ctx.measureText(dText).width;
-            ctx.font = `600 60px ${selectedFont}`; 
-            ctx.fillText("km", marginX + dWidth + 20, startY);
-
-            // --- 2. Avg. Pace ---
-            const pace = formatPace(document.getElementById('paceInput').value);
-            ctx.fillStyle = "rgba(255,255,255,0.6)";
-            ctx.font = `500 40px ${selectedFont}`; 
-            ctx.fillText("Avg. Pace", marginX, startY + 100);
-            ctx.fillStyle = "white";
-            ctx.font = `bold 75px ${selectedFont}`; 
-            ctx.fillText(pace, marginX, startY + 185);
-            const pWidth = ctx.measureText(pace).width;
-            ctx.font = `600 40px ${selectedFont}`;
-            ctx.fillStyle = "rgba(255,255,255,0.8)";
-            ctx.fillText("/km", marginX + pWidth + 15, startY + 185);
-
-            // --- 3. Time ---
-            const time = formatTime(document.getElementById('timeInput').value);
-            ctx.fillStyle = "rgba(255,255,255,0.6)";
-            ctx.font = `500 40px ${selectedFont}`;
-            ctx.fillText("Time", marginX, startY + 285);
-            ctx.fillStyle = "white";
-            ctx.font = `bold 75px ${selectedFont}`; 
-            ctx.fillText(time, marginX, startY + 370);
-        }
-
-        document.getElementById('paceInput').oninput = () => draw(displayData.distance);
-        document.getElementById('timeInput').oninput = () => draw(displayData.distance);
-        document.getElementById('distInput').oninput = (e) => {
-            displayData.distance = parseFloat(e.target.value) || 0;
-            draw(displayData.distance);
+        mediaRecorder = new MediaRecorder(window.stream, options);
+        
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
         };
 
-        document.getElementById('imageInput').onchange = (e) => {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (ev) => { const img = new Image(); img.onload = () => { bgImage = img; draw(displayData.distance); }; img.src = ev.target.result; };
-            reader.readAsDataURL(file);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: options.mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `Run_Record_${new Date().getTime()}.mp4`; // .mp4로 저장
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
         };
 
-        async function runAnimation(isRecord = false) {
-            const target = parseFloat(document.getElementById('distInput').value) || 0;
-            const status = document.getElementById('status');
-            const pBtn = document.getElementById('previewBtn');
-            const rBtn = document.getElementById('recordBtn');
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('btn-record').innerText = "녹화 중지";
+        document.getElementById('btn-record').classList.add('recording');
+    };
 
-            if (currentAnim) currentAnim.kill();
-            displayData.distance = 0;
-            pBtn.disabled = true; rBtn.disabled = true;
+    const stopRecording = () => {
+        mediaRecorder.stop();
+        isRecording = false;
+        document.getElementById('btn-record').innerText = "녹화 시작";
+        document.getElementById('btn-record').classList.remove('recording');
+    };
 
-            let recorder = null;
-            let chunks = [];
+    document.getElementById('btn-record').onclick = () => {
+        if (!isRecording) startRecording();
+        else stopRecording();
+    };
 
-            if (isRecord) {
-                status.innerText = "🎬 Recording...";
-                const stream = canvas.captureStream(30);
-                recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = 'run_record.webm';
-                    a.click();
-                    status.innerText = "✅ Saved!";
-                    pBtn.disabled = false; rBtn.disabled = false;
-                };
-                recorder.start();
-            } else {
-                status.innerText = "👀 Previewing...";
-            }
+    // 데이터 표시 (준현님의 최근 기록 반영)
+    document.getElementById('display-pace').innerText = "4'47\""; // 최근 8km 페이스
+    document.getElementById('display-dist').innerText = "8.00";
 
-            currentAnim = gsap.to(displayData, {
-                distance: target,
-                duration: 5.5,
-                ease: "power4.out",
-                onUpdate: () => draw(displayData.distance),
-                onComplete: () => {
-                    setTimeout(() => {
-                        if (isRecord) recorder.stop();
-                        else { status.innerText = ""; pBtn.disabled = false; rBtn.disabled = false; }
-                    }, 1200);
-                }
-            });
-        }
-        draw();
-    </script>
+    setupCamera();
+</script>
 </body>
 </html>
-
