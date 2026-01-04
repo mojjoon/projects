@@ -96,69 +96,85 @@
         const font = document.getElementById('fontSelect').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
+        // 1. 배경 및 그라데이션 설정
         if (bgImage) {
             const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
             const x = (canvas.width / 2) - (bgImage.width / 2) * scale;
             const y = (canvas.height / 2) - (bgImage.height / 2) * scale;
             ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
             
-            // 정렬 위치에 따른 그라데이션 효과
             let grad;
             if(textAlign === 'center') grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height * 0.4);
             else if(textAlign === 'left') grad = ctx.createLinearGradient(0, canvas.height, canvas.width * 0.8, canvas.height * 0.4);
             else grad = ctx.createLinearGradient(canvas.width, canvas.height, canvas.width * 0.2, canvas.height * 0.4);
             
-            grad.addColorStop(0, "rgba(0,0,0,0.8)");
+            grad.addColorStop(0, "rgba(0,0,0,0.85)");
             grad.addColorStop(1, "rgba(0,0,0,0)");
             ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
             ctx.fillStyle = "#1c1c1e"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // 정렬 좌표 계산
-        let xPos = 100;
-        if(textAlign === 'center') xPos = canvas.width / 2;
-        else if(textAlign === 'right') xPos = canvas.width - 100;
-        
-        ctx.textAlign = textAlign;
+        // 2. 정렬 기준 X좌표 설정
+        let xPos;
+        const padding = 100;
+        if (textAlign === 'left') xPos = padding;
+        else if (textAlign === 'center') xPos = canvas.width / 2;
+        else xPos = canvas.width - padding;
+
         const startY = canvas.height - 620;
 
-        // Distance
+        // 3. 거리(Distance) 섹션 처리
+        const dText = dist.toFixed(2);
+        const unitText = "km";
+        ctx.font = `bold 180px ${font}`;
+        const dWidth = ctx.measureText(dText).width;
+        ctx.font = `600 60px ${font}`;
+        const uWidth = ctx.measureText(unitText).width;
+        const spacing = 25;
+        const totalDistWidth = dWidth + spacing + uWidth;
+
+        // [Distance 라벨 정렬]
+        ctx.textAlign = textAlign; 
         ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.font = `500 40px ${font}`;
         ctx.fillText("Distance", xPos, startY - 175);
+
+        // [숫자 + km 덩어리 정렬 시작점 계산]
+        let distStartX = xPos;
+        if (textAlign === 'center') distStartX = xPos - (totalDistWidth / 2);
+        else if (textAlign === 'right') distStartX = xPos - totalDistWidth;
+
+        // [숫자와 km 그리기]
+        ctx.textAlign = "left"; 
         ctx.fillStyle = "white";
         ctx.font = `bold 180px ${font}`;
-        const dText = dist.toFixed(2);
-        ctx.fillText(dText, xPos, startY);
-        
-        // km 표시 (중앙/우측 정렬시 위치 보정)
-        const dWidth = ctx.measureText(dText).width;
+        ctx.fillText(dText, distStartX, startY);
         ctx.font = `600 60px ${font}`;
-        let kmX = xPos + dWidth + 20;
-        if(textAlign === 'center') kmX = xPos + (dWidth/2) + 20;
-        if(textAlign === 'right') kmX = xPos + 20; // 우측정렬시 km는 바깥으로 나가지 않게
-        if(textAlign !== 'right') ctx.fillText("km", kmX, startY);
+        ctx.fillText(unitText, distStartX + dWidth + spacing, startY);
 
-        // Pace & Time
+        // 4. 페이스 & 시간 섹션 처리
         const pace = formatPace(document.getElementById('paceInput').value);
         const time = formatTime(document.getElementById('timeInput').value);
         
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.textAlign = textAlign; // 각 항목별 제자리 정렬 적용
+
+        // 평균 페이스
         ctx.font = `500 40px ${font}`;
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.fillText("Avg. Pace", xPos, startY + 100);
         ctx.fillStyle = "white";
         ctx.font = `bold 75px ${font}`;
         ctx.fillText(pace, xPos, startY + 185);
 
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        // 시간
         ctx.font = `500 40px ${font}`;
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.fillText("Time", xPos, startY + 285);
         ctx.fillStyle = "white";
         ctx.font = `bold 75px ${font}`;
         ctx.fillText(time, xPos, startY + 370);
     }
-
     // [이전과 동일한 이벤트 리스너 및 애니메이션 함수들...]
     document.getElementById('paceInput').oninput = () => draw(displayData.distance);
     document.getElementById('timeInput').oninput = () => draw(displayData.distance);
